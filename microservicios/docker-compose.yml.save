@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  usuarios-db:
+    image: postgres:15
+    container_name: usuarios-db
+    environment:
+      POSTGRES_DB: usuarios_db
+      POSTGRES_USER: usuarios_user
+      POSTGRES_PASSWORD: usuarios123
+    ports:
+      - "5431:5432"
+    volumes:
+      - usuarios_db_data:/var/lib/postgresql/data
+      - ./usuarios/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usuarios_user -d usuarios_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  usuarios-app:
+    build: ./usuarios
+    container_name: usuarios-app
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DB_HOST: usuarios-db
+      DB_PORT: 5432
+      DB_NAME: usuarios_db
+      DB_USER: usuarios_user
+      DB_PASSWORD: usuarios123
+    depends_on:
+      usuarios-db:
+        condition: service_healthy
+
+  productos-db:
+    image: postgres:15
+    container_name: productos-db
+    environment:
+      POSTGRES_DB: productos_db
+      POSTGRES_USER: productos_user
+      POSTGRES_PASSWORD: productos123
+    ports:
+      - "5432:5432"
+    volumes:
+      - productos_db_data:/var/lib/postgresql/data
+      - ./productos/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U productos_user -d productos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  productos-app:
+    build: ./productos
+    container_name: productos-app
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      DB_HOST: productos-db
+      DB_PORT: 5432
+      DB_NAME: productos_db
+      DB_USER: productos_user
+      DB_PASSWORD: productos123
+    depends_on:
+      productos-db:
+        condition: service_healthy
+
+  pedidos-db:
+    image: postgres:15
+    container_name: pedidos-db
+    environment:
+      POSTGRES_DB: pedidos_db
+      POSTGRES_USER: pedidos_user
+      POSTGRES_PASSWORD: pedidos123
+    ports:
+      - "5433:5432"
+    volumes:
+      - pedidos_db_data:/var/lib/postgresql/data
+      - ./pedidos/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck      test: ["CMD-SHELL", "pg_isready -U pedidos_user -d pedidos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pedidos-app:
+    build: ./pedidos
+    container_name: pedidos-app
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      DB_HOST: pedidos-db
+      DB_PORT: 5432
+      DB_NAME: pedidos_db
+      DB_USER: pedidos_user
+      DB_PASSWORD: pedidos123
+      USUARIOS_SERVICE_URL: http://usuarios-app:3001
+      PRODUCTOS_SERVICE_URL: http://productos-app:3002
+    depends_on:
+      pedidos-db:
+        condition: service_healthy
+      usuarios-app:
+        condition: service_started
+      productos-app:
+        condition: service_started
+
+  gateway:
+    build: ./gateway
+    container_name: api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      USUARIOS_SERVICE_URL: http://usuarios-app:3001
+      PRODUCTOS_SERVICE_URL: http://productos-app:3002
+      PEDIDOS_SERVICE_URL: http://pedidos-app:3003
+    depends_on:
+      - usuarios-app
+      - productos-app
+      - pedidos-app
+
+volumes:
+  usuarios_db_data:
+  productos_db_data:
+  pedidos_db_data:
