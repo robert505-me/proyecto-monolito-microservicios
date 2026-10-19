@@ -19,7 +19,7 @@ app.get('/usuarios', async (req, res) => {
 
 app.get('/productos', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM productos');
+    const result = await pool.query('SELECT * FROM product');
     res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
