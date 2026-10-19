@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', servicio: 'usuarios' });
+  res.json({ status: 'OK', servicio: 'error_test' });
 });
 
 app.get('/usuarios', async (req, res) => {
